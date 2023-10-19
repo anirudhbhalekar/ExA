@@ -67,8 +67,10 @@ def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, b
     checklimits(retraction, 15)
 
     offsets = []
+    grid_size = return_grid_size(num_prints)
     for i in range(num_prints):
-        x = i % (round(num_prints ** 0.5))
+        x = (i % grid_size) * (100/grid_size) + 10
+        y = (i // grid_size) * (100/grid_size) + 10
         offsets.append(x, y)
 
     output = ''
@@ -89,7 +91,7 @@ def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, b
     for n in range(num_prints):
 
         # Create interpolation functions
-        fkp = interpolate_variable(kp_list[n] len(commands))
+        fkp = interpolate_variable(kp_list[n], len(commands))
         fki = interpolate_variable(ki_list[n], len(commands))
         fkd = interpolate_variable(kd_list[n], len(commands))
         fnozzletemp = interpolate_variable(nozzletemp_list[n], len(commands))
