@@ -38,6 +38,24 @@ def checklimits(printparameter, value, lessthan=True):
         raise Exception("Unexpected parameter type")
 
 
+def create_list_from_val(val, num_prints):
+
+    mt_list = np.zeros(num_prints)
+
+    if type(val) != list: 
+        mt_list[:] = val
+
+    elif len(val) < num_prints: 
+        while len(val) < num_prints: 
+            val.append(val[-1])
+
+        mt_list = val
+    else: 
+        mt_list = val
+    
+    return mt_list
+    
+
 def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, bedtemp=55, speedfactor=1,
                  extrusionfactor=1, retraction=2.5, fanspeed=255, num_prints = 9):
 
@@ -47,6 +65,7 @@ def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, b
     checklimits(bedtemp, 75)
     checklimits(extrusionfactor, 2)
     checklimits(retraction, 15)
+
 
 
     # Create interpolation functions
@@ -122,3 +141,8 @@ def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, b
     file = open(filename, 'w')
     file.write(output)
     file.close()
+
+
+if __name__ == "__main__": 
+
+    pass
