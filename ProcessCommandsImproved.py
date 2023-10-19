@@ -75,10 +75,17 @@ def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, b
 
     offsets = []
     grid_size = return_grid_size(num_prints)
+    step = (100/grid_size)
     for i in range(num_prints):
-        x = (i % grid_size) * (100/grid_size) + 10
-        y = (i // grid_size) * (100/grid_size) + 10
-        offsets.append(x, y)
+        if ((i // grid_size) + 1) % 2 == 0:
+            x = int((grid_size - (i % grid_size) - 0.5) * step)
+        else:
+            x = int(((i % grid_size) + 0.5) * step)
+        y = int(((i // grid_size) + 0.5) * step)
+        offsets.append((x, y))
+    
+    for o in offsets:
+        print(o)
 
     output = ''
 
