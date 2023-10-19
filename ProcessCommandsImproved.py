@@ -54,7 +54,14 @@ def create_list_from_val(val, num_prints):
         mt_list = val
     
     return mt_list
+
+def return_grid_size(num_prints): 
+
+    tolerance = 0.01
     
+    size = np.ceil(np.sqrt(num_prints - tolerance)) 
+
+    return int(size)
 
 def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, bedtemp=55, speedfactor=1,
                  extrusionfactor=1, retraction=2.5, fanspeed=255, num_prints=9):
