@@ -84,7 +84,7 @@ def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, b
     for n in range(num_prints):
 
         # Create interpolation functions
-        fkp = interpolate_variable(kp_list[n] len(commands))
+        fkp = interpolate_variable(kp_list[n], len(commands))
         fki = interpolate_variable(ki_list[n], len(commands))
         fkd = interpolate_variable(kd_list[n], len(commands))
         fnozzletemp = interpolate_variable(nozzletemp_list[n], len(commands))
