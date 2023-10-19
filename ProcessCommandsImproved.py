@@ -12,12 +12,12 @@ def interpolate_variable(variable, length):
     return f
 
 
-def addvariable(command, index, string):
+def addvariable(command, index, string, offset):
     # Returns gcode string if the variable value is defined in command
     if np.isnan(command[index]):
         return ''
     else:
-        return ' ' + string + str(command[index])
+        return ' ' + string + str(command[index] + offset)
 
 def checklimits(printparameter, value, lessthan=True):
     # Safety limit assertions: check printparameter is within desired values
@@ -64,7 +64,7 @@ def return_grid_size(num_prints):
     return int(size)
 
 def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, bedtemp=55, speedfactor=1,
-                 extrusionfactor=1, retraction=2.5, fanspeed=255, num_prints=9):
+                 extrusionfactor=1, retraction=2.5, fanspeed=255, num_prints=4):
 
     # Safety limits: to prevent damage to the printer. Check with your demonstrator before exceeding these.
     checklimits(nozzletemp, 180, False)
@@ -125,8 +125,8 @@ def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, b
 
         # Retract, move to starting position, and begin extrusion
         output += 'G1 F2400 E-2.5\nG0'
-        output += addvariable(commands[0], 2, 'X')  # Add X command if it exists
-        output += addvariable(commands[0], 3, 'Y')  # Add Y command if it exists
+        output += addvariable(commands[0], 2, 'X', offsets[n][0])  # Add X command if it exists
+        output += addvariable(commands[0], 3, 'Y', offsets[n][1])  # Add Y command if it exists
         output += addvariable(commands[0], 4, 'Z')  # Add Z command if it exists
         output += addvariable(commands[0], 5, 'E')  # Add E command if it exists
         output += '\nG1 F2400 E2.5\n'
@@ -163,8 +163,8 @@ def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, b
                 output += 'M106 S' + str(ffanspeed(i)) + '\n'
 
             output += 'G' + str(int(commands[i][0]))
-            output += addvariable(commands[i], 2, 'X')  # Add X command if it exists
-            output += addvariable(commands[i], 3, 'Y')  # Add Y command if it exists
+            output += addvariable(commands[i], 2, 'X', offsets[n][0])  # Add X command if it exists
+            output += addvariable(commands[i], 3, 'Y', offsets[n][1])  # Add Y command if it exists
             output += addvariable(commands[i], 4, 'Z')  # Add Z command if it exists
             output += addvariable(commands[i], 5, 'E')  # Add E command if it exists
             output += '\n'
