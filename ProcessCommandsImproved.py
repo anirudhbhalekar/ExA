@@ -38,6 +38,24 @@ def checklimits(printparameter, value, lessthan=True):
         raise Exception("Unexpected parameter type")
 
 
+def create_list_from_val(val, num_prints):
+
+    mt_list = np.zeros(num_prints)
+
+    if type(val) != list: 
+        mt_list[:] = val
+
+    elif len(val) < num_prints: 
+        while len(val) < num_prints: 
+            val.append(val[-1])
+
+        mt_list = val
+    else: 
+        mt_list = val
+    
+    return mt_list
+    
+
 def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, bedtemp=55, speedfactor=1,
                  extrusionfactor=1, retraction=2.5, fanspeed=255, num_prints=9):
 
@@ -54,6 +72,19 @@ def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, b
         offsets.append(x, y)
 
     output = ''
+
+    kp_list = create_list_from_val(kp, num_prints)
+    ki_list = create_list_from_val(ki, num_prints)
+    kd_list = create_list_from_val(kd, num_prints)
+
+    nozzletemp_list = create_list_from_val(nozzletemp, num_prints)
+    bedtemp_list = create_list_from_val(bedtemp, num_prints)
+
+    speedfactor_list = create_list_from_val(speedfactor, num_prints)
+    extrusionfactor_list = create_list_from_val(extrusionfactor, num_prints)
+
+    retraction_list = create_list_from_val(retraction, num_prints)
+    fanspeed_list = create_list_from_val(fanspeed, num_prints)
 
     for n in range(num_prints):
 
@@ -130,3 +161,8 @@ def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, b
     file = open(filename, 'w')
     file.write(output)
     file.close()
+
+
+if __name__ == "__main__": 
+
+    pass
