@@ -74,14 +74,15 @@ def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, b
     checklimits(retraction, 15)
 
     offsets = []
+    original  = (50, 50)
     grid_size = return_grid_size(num_prints)
     step = (100/grid_size)
     for i in range(num_prints):
         if ((i // grid_size) + 1) % 2 == 0:
-            x = int((grid_size - (i % grid_size) - 0.5) * step)
+            x = int((grid_size - (i % grid_size) - 0.5) * step) - original[0]
         else:
-            x = int(((i % grid_size) + 0.5) * step)
-        y = int(((i // grid_size) + 0.5) * step)
+            x = int(((i % grid_size) + 0.5) * step) - original[0]
+        y = int(((i // grid_size) + 0.5) * step) - original[1]
         offsets.append((x, y))
     
     for o in offsets:
@@ -180,5 +181,19 @@ def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, b
 
 
 if __name__ == "__main__": 
-
+    num_prints = 2
+    offsets = []
+    original  = (50, 50)
+    grid_size = return_grid_size(num_prints)
+    step = (100/grid_size)
+    for i in range(num_prints):
+        if ((i // grid_size) + 1) % 2 == 0:
+            x = int((grid_size - (i % grid_size) - 0.5) * step) - original[0]
+        else:
+            x = int(((i % grid_size) + 0.5) * step) - original[0]
+        y = int(((i // grid_size) + 0.5) * step) - original[1]
+        offsets.append((x, y))
+    
+    for o in offsets:
+        print(o)
     pass
