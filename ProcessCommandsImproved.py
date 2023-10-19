@@ -48,6 +48,11 @@ def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, b
     checklimits(extrusionfactor, 2)
     checklimits(retraction, 15)
 
+    offsets = []
+    for i in range(num_prints):
+        x = i % (round(num_prints ** 0.5))
+        offsets.append(x, y)
+
     output = ''
 
     for n in range(num_prints):
