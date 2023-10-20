@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import interpolate
 
-
+BASEPLATE_SIZE = 120 # in mm
 
 def interpolate_variable(variable, length):
     # Interpolation functions map length of input variable to length of gcode file
@@ -12,7 +12,7 @@ def interpolate_variable(variable, length):
     return f
 
 
-def addvariable(command, index, string, offset):
+def addvariable(command, index, string, offset = 0):
     # Returns gcode string if the variable value is defined in command
     if np.isnan(command[index]):
         return ''
@@ -63,6 +63,21 @@ def return_grid_size(num_prints):
 
     return int(size)
 
+def snake_pattern(num_prints, original = (0,0)):
+
+    offsets = []
+    grid_size = return_grid_size(num_prints)
+    step = (BASEPLATE_SIZE/grid_size)
+    for i in range(num_prints):
+        if ((i // grid_size) + 1) % 2 == 0:
+            x = int((grid_size - (i % grid_size) - 0.5) * step) - original[0]
+        else:
+            x = int(((i % grid_size) + 0.5) * step) - original[0]
+        y = int(((i // grid_size) + 0.5) * step) - original[1]
+        offsets.append((x, y))
+
+    return offsets
+    
 def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, bedtemp=55, speedfactor=1,
                  extrusionfactor=1, retraction=2.5, fanspeed=255, num_prints=4):
 
@@ -74,19 +89,17 @@ def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, b
     checklimits(retraction, 15)
 
     offsets = []
-    original  = (50, 50)
+    original  = (65, 80)
     grid_size = return_grid_size(num_prints)
-    step = (100/grid_size)
+    step_x = (original[0] * 2/grid_size)
+    step_y = (original[1] * 2/grid_size)
     for i in range(num_prints):
         if ((i // grid_size) + 1) % 2 == 0:
-            x = int((grid_size - (i % grid_size) - 0.5) * step) - original[0]
+            x = int((grid_size - (i % grid_size) - 0.5) * step_x) - original[0]
         else:
-            x = int(((i % grid_size) + 0.5) * step) - original[0]
-        y = int(((i // grid_size) + 0.5) * step) - original[1]
+            x = int(((i % grid_size) + 0.5) * step_x) - original[0]
+        y = int(((i // grid_size) + 0.5) * step_y) - original[1]
         offsets.append((x, y))
-    
-    for o in offsets:
-        print(o)
 
     output = ''
 
@@ -103,8 +116,44 @@ def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, b
     retraction_list = create_list_from_val(retraction, num_prints)
     fanspeed_list = create_list_from_val(fanspeed, num_prints)
 
+    n = 0
+
+    fkp = interpolate_variable(kp_list[n], len(commands))
+    fki = interpolate_variable(ki_list[n], len(commands))
+    fkd = interpolate_variable(kd_list[n], len(commands))
+    fnozzletemp = interpolate_variable(nozzletemp_list[n], len(commands))
+    fbedtemp = interpolate_variable(bedtemp_list[n], len(commands))
+    fspeedfactor = interpolate_variable(speedfactor_list[n], len(commands))
+    fextrusionfactor = interpolate_variable(extrusionfactor_list[n], len(commands))
+    fretraction = interpolate_variable(retraction_list[n], len(commands))
+    ffanspeed = interpolate_variable(fanspeed_list[n], len(commands))
+
+    # All gcode is saved in output variable, which is saved to file at the end
+    output += 'M301 P' + str(fkp(0)) + ' I' + str(fki(0)) + ' D' + str(fkd(0)) + '\n'  # Set initial PID parameters
+    output += 'M140 S' + str(fbedtemp(0)) + '\n' + 'M190 S' + str(fbedtemp(0)) + '\n'  # Set initial bed temperature
+    output += 'M104 S' + str(fnozzletemp(0)) + '\n' + 'M109 S' \
+                + str(fnozzletemp(0)) + '\n'  # Set initial hotend temperature
+    output += 'M83\nG21\nG90\nM107\nG28\nG0 Z5 E5 F500\nG0 X-1 Z0\nG1' \
+                ' Y60 E3 F500\nG1 Y10 E8 F500\nG1 E-1 F250\n'  # Initialise printer
+
+    # Retract, move to starting position, and begin extrusion
+    output += 'G1 F2400 E-2.5\nG0'
+    output += addvariable(commands[0], 2, 'X', offsets[n][0])  # Add X command if it exists
+    output += addvariable(commands[0], 3, 'Y', offsets[n][1])  # Add Y command if it exists
+    output += addvariable(commands[0], 4, 'Z', 0)  # Add Z command if it exists
+    output += addvariable(commands[0], 5, 'E')  # Add E command if it exists
+    output += '\nG1 F2400 E2.5\n'
+    output += 'G0 F'+str(2400*speedfactor)+'\n'
+
+    output += 'M106 S' + str(ffanspeed(0)) + '\n'  # Set initial fan speed
+
     for n in range(num_prints):
 
+        
+        output += f'G1 X{offsets[n][0] + original[0]} \n' 
+        output += f'G1 Y{offsets[n][1] + original[1]} \n'
+
+        output += 'G1 Z0.1 \n'
         # Create interpolation functions
         fkp = interpolate_variable(kp_list[n], len(commands))
         fki = interpolate_variable(ki_list[n], len(commands))
@@ -116,25 +165,11 @@ def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, b
         fretraction = interpolate_variable(retraction_list[n], len(commands))
         ffanspeed = interpolate_variable(fanspeed_list[n], len(commands))
 
-        # All gcode is saved in output variable, which is saved to file at the end
         output += 'M301 P' + str(fkp(0)) + ' I' + str(fki(0)) + ' D' + str(fkd(0)) + '\n'  # Set initial PID parameters
         output += 'M140 S' + str(fbedtemp(0)) + '\n' + 'M190 S' + str(fbedtemp(0)) + '\n'  # Set initial bed temperature
         output += 'M104 S' + str(fnozzletemp(0)) + '\n' + 'M109 S' \
-                  + str(fnozzletemp(0)) + '\n'  # Set initial hotend temperature
-        output += 'M83\nG21\nG90\nM107\nG28\nG0 Z5 E5 F500\nG0 X-1 Z0\nG1' \
-                  ' Y60 E3 F500\nG1 Y10 E8 F500\nG1 E-1 F250\n'  # Initialise printer
-
-        # Retract, move to starting position, and begin extrusion
-        output += 'G1 F2400 E-2.5\nG0'
-        output += addvariable(commands[0], 2, 'X', offsets[n][0])  # Add X command if it exists
-        output += addvariable(commands[0], 3, 'Y', offsets[n][1])  # Add Y command if it exists
-        output += addvariable(commands[0], 4, 'Z')  # Add Z command if it exists
-        output += addvariable(commands[0], 5, 'E')  # Add E command if it exists
-        output += '\nG1 F2400 E2.5\n'
-        output += 'G0 F'+str(2400*speedfactor)+'\n'
-
-        output += 'M106 S' + str(ffanspeed(0)) + '\n'  # Set initial fan speed
-
+                    + str(fnozzletemp(0)) + '\n' 
+        
         # Walk through all remaining commands
         retractflag = False
         for i in range(2, len(commands)):
@@ -170,8 +205,10 @@ def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, b
             output += addvariable(commands[i], 5, 'E')  # Add E command if it exists
             output += '\n'
 
+        
+        output += 'M107\nM190 S0\nG1 E-3 F200\n G0 Z30 \nM104 S0\nG4 S300\nM107\nM84'
     # Closing code
-    output += 'M107\nG0 X0 Y120\nM190 S0\nG1 E-3 F200\nM104 S0\nG4 S300\nM107\nM84'
+    
 
     # Write output to file
     filename = 'outputgcode/' + filestub + '.gcode'
@@ -180,20 +217,7 @@ def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, b
     file.close()
 
 
+
 if __name__ == "__main__": 
-    num_prints = 2
-    offsets = []
-    original  = (50, 50)
-    grid_size = return_grid_size(num_prints)
-    step = (100/grid_size)
-    for i in range(num_prints):
-        if ((i // grid_size) + 1) % 2 == 0:
-            x = int((grid_size - (i % grid_size) - 0.5) * step) - original[0]
-        else:
-            x = int(((i % grid_size) + 0.5) * step) - original[0]
-        y = int(((i // grid_size) + 0.5) * step) - original[1]
-        offsets.append((x, y))
     
-    for o in offsets:
-        print(o)
     pass
