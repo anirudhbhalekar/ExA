@@ -81,13 +81,7 @@ def snake_pattern(num_prints, original = (0,0)):
 def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, bedtemp=55, speedfactor=1,
                  extrusionfactor=1, retraction=2.5, fanspeed=255, num_prints=4):
 
-    # Safety limits: to prevent damage to the printer. Check with your demonstrator before exceeding these.
-    checklimits(nozzletemp, 180, False)
-    checklimits(nozzletemp, 260)
-    checklimits(bedtemp, 75)
-    checklimits(extrusionfactor, 2)
-    checklimits(retraction, 15)
-
+    
     offsets = []
     original  = (65, 80)
     grid_size = return_grid_size(num_prints)
@@ -116,44 +110,34 @@ def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, b
     retraction_list = create_list_from_val(retraction, num_prints)
     fanspeed_list = create_list_from_val(fanspeed, num_prints)
 
-    n = 0
+    fkp = interpolate_variable(kp_list[0], len(commands))
+    fki = interpolate_variable(ki_list[0], len(commands))
+    fkd = interpolate_variable(kd_list[0], len(commands))
+    fnozzletemp = interpolate_variable(nozzletemp_list[0], len(commands))
+    fbedtemp = interpolate_variable(bedtemp_list[0], len(commands))
+    fspeedfactor = interpolate_variable(speedfactor_list[0], len(commands))
+    fextrusionfactor = interpolate_variable(extrusionfactor_list[0], len(commands))
+    fretraction = interpolate_variable(retraction_list[0], len(commands))
+    ffanspeed = interpolate_variable(fanspeed_list[0], len(commands))
 
-    fkp = interpolate_variable(kp_list[n], len(commands))
-    fki = interpolate_variable(ki_list[n], len(commands))
-    fkd = interpolate_variable(kd_list[n], len(commands))
-    fnozzletemp = interpolate_variable(nozzletemp_list[n], len(commands))
-    fbedtemp = interpolate_variable(bedtemp_list[n], len(commands))
-    fspeedfactor = interpolate_variable(speedfactor_list[n], len(commands))
-    fextrusionfactor = interpolate_variable(extrusionfactor_list[n], len(commands))
-    fretraction = interpolate_variable(retraction_list[n], len(commands))
-    ffanspeed = interpolate_variable(fanspeed_list[n], len(commands))
-
-    # All gcode is saved in output variable, which is saved to file at the end
     output += 'M301 P' + str(fkp(0)) + ' I' + str(fki(0)) + ' D' + str(fkd(0)) + '\n'  # Set initial PID parameters
     output += 'M140 S' + str(fbedtemp(0)) + '\n' + 'M190 S' + str(fbedtemp(0)) + '\n'  # Set initial bed temperature
     output += 'M104 S' + str(fnozzletemp(0)) + '\n' + 'M109 S' \
-                + str(fnozzletemp(0)) + '\n'  # Set initial hotend temperature
-    output += 'M83\nG21\nG90\nM107\nG28\nG0 Z5 E5 F500\nG0 X-1 Z0\nG1' \
-                ' Y60 E3 F500\nG1 Y10 E8 F500\nG1 E-1 F250\n'  # Initialise printer
-
-    # Retract, move to starting position, and begin extrusion
-    output += 'G1 F2400 E-2.5\nG0'
-    output += addvariable(commands[0], 2, 'X', offsets[n][0])  # Add X command if it exists
-    output += addvariable(commands[0], 3, 'Y', offsets[n][1])  # Add Y command if it exists
-    output += addvariable(commands[0], 4, 'Z', 0)  # Add Z command if it exists
-    output += addvariable(commands[0], 5, 'E')  # Add E command if it exists
-    output += '\nG1 F2400 E2.5\n'
-    output += 'G0 F'+str(2400*speedfactor)+'\n'
-
+                    + str(fnozzletemp(0)) + '\n'  # Set initial hotend temperature
+        
     output += 'M106 S' + str(ffanspeed(0)) + '\n'  # Set initial fan speed
 
+    output += 'M83\nG21\nG90\nM107\nG28\nG0 Z5 E5 F1500\nG0 X-1 Z0\nG1' \
+              ' Y60 E3 F500\nG1 Y10 E8 F500\nG1 E-1 F250\n'  # Initialise printer
     for n in range(num_prints):
 
-        
-        output += f'G1 X{offsets[n][0] + original[0]} \n' 
-        output += f'G1 Y{offsets[n][1] + original[1]} \n'
+        # Safety limits: to prevent damage to the printer. Check with your demonstrator before exceeding these.
+        checklimits(nozzletemp_list[n], 180, False)
+        checklimits(nozzletemp_list[n], 260)
+        checklimits(bedtemp_list[n], 75)
+        checklimits(extrusionfactor_list[n], 2)
+        checklimits(retraction_list[n], 15)
 
-        output += 'G1 Z0.1 \n'
         # Create interpolation functions
         fkp = interpolate_variable(kp_list[n], len(commands))
         fki = interpolate_variable(ki_list[n], len(commands))
@@ -165,11 +149,8 @@ def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, b
         fretraction = interpolate_variable(retraction_list[n], len(commands))
         ffanspeed = interpolate_variable(fanspeed_list[n], len(commands))
 
-        output += 'M301 P' + str(fkp(0)) + ' I' + str(fki(0)) + ' D' + str(fkd(0)) + '\n'  # Set initial PID parameters
-        output += 'M140 S' + str(fbedtemp(0)) + '\n' + 'M190 S' + str(fbedtemp(0)) + '\n'  # Set initial bed temperature
-        output += 'M104 S' + str(fnozzletemp(0)) + '\n' + 'M109 S' \
-                    + str(fnozzletemp(0)) + '\n' 
-        
+        output += f'M109 S{str(fnozzletemp(0))}' # Resets the Nozzle Temp and waits for that temp to be achieved
+
         # Walk through all remaining commands
         retractflag = False
         for i in range(2, len(commands)):
@@ -206,9 +187,21 @@ def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, b
             output += '\n'
 
         
-        output += 'M107\nM190 S0\nG1 E-3 F200\n G0 Z30 \nM104 S0\nG4 S300\nM107\nM84'
-    # Closing code
+       
+        output += 'G1 Z30 E-0.5\n'
+
+        try: 
+            output += f'G1 X{offsets[n+1][0] + original[0]} E-0.5 \n' 
+            output += f'G1 Y{offsets[n+1][1] + original[1]} E-0.5 \n'
+            output += 'G1 Z0.5\n'
+        except: 
+            pass
+ 
+        
     
+    # Closing code
+    output += 'M107\nM190 S0\nG1 E-3 F200\nM104 S0\nG4 S300\nM107\nM84'
+        
 
     # Write output to file
     filename = 'outputgcode/' + filestub + '.gcode'
