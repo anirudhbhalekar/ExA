@@ -30,7 +30,7 @@ ext_amt_list =     [1.2, 1.2, 1.2, 1.2, 1.05, 1.05, 1.05, 1.05, 0.9, 0.9, 0.9, 0
 
 if __name__ == "__main__": 
     # See the instruction document for details of the following function's inputs
-    processgcode('OUTPUT_DimensionAccuracy_Updated', printcommands, nozzletemp=temperature_list, bedtemp= 50, speedfactor= 1, retraction=3, extrusionfactor=ext_amt_list, num_prints=NUM_PRINTS)
+    processgcode('OUTPUT_DimensionAccuracy_Updated', printcommands, nozzletemp=temperature_list, bedtemp=50, speedfactor=5, retraction=3, extrusionfactor=ext_amt_list, num_prints=NUM_PRINTS)
 
     tt = generate_temp_profiles(NUM_PRINTS)
     print(tt)

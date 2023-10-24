@@ -190,13 +190,20 @@ def processgcode(filestub, commands, kp=15.5, ki=0.13, kd=6.0, nozzletemp=210, b
        
         output += 'G1 Z30 E-0.5\n'
 
+        
+
         try: 
-            output += f'G1 X{offsets[n+1][0] + original[0]} E-0.5 \n' 
-            output += f'G1 Y{offsets[n+1][1] + original[1]} E-0.5 \n'
-            output += 'G1 Z0.5\n'
+            output += f'G1 X{offsets[n+1][0] + 60} E-0.5 \n' 
+            output += f'G1 Y{offsets[n+1][1] + 60} E-0.5 \n'
+
+            output += f'M83\nG21\nG90\nM107\nG0 E5 F1500\nG0 X{offsets[n+1][0] + 60} Z0\nG1' \
+              f' Y{offsets[n+1][1] + 60} E3 F500\nG1 Y{offsets[n+1][1] + 60} E8 F500\nG1 E-1 F250\n'  # Initialise printer
+        
         except: 
             pass
- 
+            
+        
+        
         
     
     # Closing code
